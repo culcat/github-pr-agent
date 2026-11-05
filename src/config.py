@@ -3,10 +3,13 @@
 import os
 from dataclasses import dataclass, field
 from typing import List, Optional
-from dotenv import load_dotenv
 
-# Load local .env if available
-load_dotenv()
+# Load local .env if python-dotenv is installed
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 
 DEFAULT_EXCLUDED_PATTERNS = [
