@@ -2,6 +2,7 @@
 
 import json
 import logging
+import os
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
@@ -100,6 +101,7 @@ class LLMClient:
         cfg = PROVIDER_CONFIGS.get(self.provider, {})
         self.base_url = (base_url or cfg.get("base_url", "https://api.openai.com/v1")).rstrip("/")
         self.model = model or cfg.get("default_model", "gpt-4o-mini")
+        self.timeout = int(os.getenv("LLM_TIMEOUT", "180"))
 
         self.session = requests.Session()
         self.session.headers.update({
@@ -140,8 +142,8 @@ Please review these changes and return your response in the requested JSON struc
             payload["response_format"] = {"type": "json_object"}
 
         url = f"{self.base_url}/chat/completions"
-        logger.info("Sending review request to %s (model: %s)", self.base_url, self.model)
-        resp = self.session.post(url, json=payload, timeout=90)
+        logger.info("Sending review request to %s (model: %s, timeout: %ds)", self.base_url, self.model, self.timeout)
+        resp = self.session.post(url, json=payload, timeout=self.timeout)
         resp.raise_for_status()
 
         data = resp.json()
