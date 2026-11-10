@@ -19,6 +19,8 @@ DEFAULT_EXCLUDED_PATTERNS = [
     "poetry.lock",
     "Pipfile.lock",
     "Cargo.lock",
+    "uv.lock",
+    "*.lock",
     "go.sum",
     "composer.lock",
     "*.min.js",
@@ -87,7 +89,12 @@ class Config:
         default_factory=lambda: int(os.getenv("MAX_DIFF_LINES", "1500"))
     )
     excluded_patterns: List[str] = field(
-        default_factory=lambda: DEFAULT_EXCLUDED_PATTERNS
+        default_factory=lambda: [
+            p.strip()
+            for p in os.getenv("EXCLUDED_PATTERNS", "").split(",")
+            if p.strip()
+        ]
+        + DEFAULT_EXCLUDED_PATTERNS
     )
 
     def validate(self) -> None:
