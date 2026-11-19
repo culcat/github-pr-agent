@@ -4,7 +4,7 @@ import unittest
 from unittest.mock import MagicMock
 
 from src.config import Config, DEFAULT_EXCLUDED_PATTERNS
-from src.llm_client import LLMClient, ReviewResult, ReviewComment
+from src.llm_client import LLMClient, SYSTEM_PROMPT, ReviewResult, ReviewComment
 from src.telegram_client import TelegramClient
 from src.github_client import PullRequestMetadata, ChangedFile
 
@@ -132,6 +132,65 @@ class TestLLMParser(unittest.TestCase):
         result = self.client._parse_response(raw)
         self.assertEqual(result.verdict, "COMMENT")
         self.assertIn("Automated review completed", result.summary)
+
+
+class TestStackReviewPrompt(unittest.TestCase):
+    """System prompt stack expertise and REVIEW_EXTRA_INSTRUCTIONS support."""
+
+    def test_system_prompt_contains_stack_expertise(self):
+        self.assertIn("Stack expertise", SYSTEM_PROMPT)
+        self.assertIn("Next.js App Router", SYSTEM_PROMPT)
+        self.assertIn("'use client'", SYSTEM_PROMPT)
+        self.assertIn("revalidatePath", SYSTEM_PROMPT)
+        self.assertIn("TypeScript (strict mode)", SYSTEM_PROMPT)
+        self.assertIn("SCSS Modules", SYSTEM_PROMPT)
+        self.assertIn("*.module.scss", SYSTEM_PROMPT)
+        self.assertIn("React best practices", SYSTEM_PROMPT)
+        self.assertIn("Security", SYSTEM_PROMPT)
+
+    def test_no_extra_instructions_by_default(self):
+        client = LLMClient(api_key="dummy", provider="openai")
+        self.assertEqual(client.system_prompt, SYSTEM_PROMPT)
+
+    def test_extra_instructions_appended_to_system_prompt(self):
+        extra = "Always flag deprecated React lifecycle methods."
+        client = LLMClient(api_key="dummy", provider="openai", extra_instructions=extra)
+        self.assertTrue(client.system_prompt.startswith(SYSTEM_PROMPT))
+        self.assertTrue(client.system_prompt.rstrip().endswith(extra))
+        self.assertIn("Additional review instructions", client.system_prompt)
+        # Original prompt content is preserved before the appended part
+        self.assertIn("Stack expertise", client.system_prompt)
+
+    def test_extra_instructions_sent_in_payload(self):
+        client = LLMClient(
+            api_key="dummy", provider="openai", extra_instructions="Prefer server components."
+        )
+        captured = {}
+
+        class FakeResp:
+            def raise_for_status(self):
+                pass
+
+            def json(self):
+                return {
+                    "choices": [
+                        {
+                            "message": {
+                                "content": '{"verdict": "COMMENT", "score": 7, "summary": "ok"}'
+                            }
+                        }
+                    ]
+                }
+
+        def fake_post(url, json=None, timeout=None):
+            captured["payload"] = json
+            return FakeResp()
+
+        client.session.post = fake_post
+        client.review_code(pr_title="T", pr_description="D", files_diff="+x")
+        system_message = captured["payload"]["messages"][0]["content"]
+        self.assertIn("Prefer server components.", system_message)
+        self.assertIn("Stack expertise", system_message)
 
 
 class TestTelegramBuilder(unittest.TestCase):

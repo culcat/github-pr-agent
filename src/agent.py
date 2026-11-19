@@ -25,6 +25,7 @@ class PRAgent:
             provider=self.config.llm_provider,
             model=self.config.llm_model or None,
             base_url=self.config.llm_base_url,
+            extra_instructions=self.config.review_extra_instructions or None,
         )
         self.telegram = TelegramClient(
             bot_token=self.config.telegram_bot_token,

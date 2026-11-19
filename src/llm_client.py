@@ -64,6 +64,13 @@ Your responsibilities:
    - "REQUEST_CHANGES": Contains critical bugs, logic errors, security flaws, or high performance risks.
    - "COMMENT": Minor questions or non-blocking suggestions.
 
+Stack expertise — review the code as an expert in this project's stack:
+- **Next.js App Router**: Distinguish server and client components; flag unnecessary or missing 'use client' directives (client components should be justified). Server Actions MUST verify authorization/session before reading or mutating data. After data mutations, verify revalidatePath (or revalidateTag) is called so cached pages stay fresh. Prefer server components for data fetching.
+- **TypeScript (strict mode)**: Never accept `any` — require precise types, generics, or `unknown` with type narrowing. Flag non-null assertions, unchecked type casts, and missing return types on exported functions.
+- **SCSS Modules**: Styles must live only in `*.module.scss` files co-located with their component. Flag inline styles, Tailwind/Bootstrap utility classes, and unjustified global CSS. Watch for unused selectors and abuse of `:global`/deep selectors that break style encapsulation.
+- **React best practices**: Correct hook usage (complete dependency arrays, no conditional or dynamically invoked hooks), stable `key` props in lists (never the array index for reorderable data), and accessibility (semantic HTML, labeled form controls, alt text, keyboard focus states).
+- **Security**: Secrets and API keys belong only in server-side code or environment variables — never in client components or the browser bundle. Every Server Action must validate and sanitize its input arguments before use.
+
 CRITICAL: You MUST respond ONLY with valid, parseable JSON in the following exact format:
 {
   "verdict": "APPROVE" | "REQUEST_CHANGES" | "COMMENT",
@@ -94,6 +101,7 @@ class LLMClient:
         provider: str = "gemini",
         model: Optional[str] = None,
         base_url: Optional[str] = None,
+        extra_instructions: Optional[str] = None,
     ):
         self.api_key = api_key
         self.provider = provider.lower()
@@ -102,6 +110,15 @@ class LLMClient:
         self.base_url = (base_url or cfg.get("base_url", "https://api.openai.com/v1")).rstrip("/")
         self.model = model or cfg.get("default_model", "gpt-4o-mini")
         self.timeout = int(os.getenv("LLM_TIMEOUT", "180"))
+
+        # Optional extra review instructions (REVIEW_EXTRA_INSTRUCTIONS)
+        # are appended to the end of the system prompt.
+        self.extra_instructions = (extra_instructions or "").strip()
+        self.system_prompt = SYSTEM_PROMPT
+        if self.extra_instructions:
+            self.system_prompt = (
+                f"{SYSTEM_PROMPT}\nAdditional review instructions:\n{self.extra_instructions}\n"
+            )
 
         self.session = requests.Session()
         self.session.headers.update({
@@ -131,7 +148,7 @@ Please review these changes and return your response in the requested JSON struc
         payload = {
             "model": self.model,
             "messages": [
-                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "system", "content": self.system_prompt},
                 {"role": "user", "content": user_prompt},
             ],
             "temperature": 0.2,
