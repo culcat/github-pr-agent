@@ -96,6 +96,9 @@ class Config:
         ]
         + DEFAULT_EXCLUDED_PATTERNS
     )
+    review_extra_instructions: str = field(
+        default_factory=lambda: os.getenv("REVIEW_EXTRA_INSTRUCTIONS", "")
+    )
 
     def validate(self) -> None:
         """Validate required settings."""
