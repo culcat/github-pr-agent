@@ -9,7 +9,7 @@
 - **Глубокий анализ кода:** Проверяет логику, потенциальные баги, уязвимости безопасности (OWASP), производительность и архитектуру.
 - **Построчные комментарии:** Оставляет замечания непосредственно к конкретным строкам кода в GitHub PR.
 - **Официальный вердикт:** Выставляет вердикт (`APPROVE`, `REQUEST_CHANGES` или `COMMENT`) с оценкой от 1 до 10.
-- **Мгновенные уведомления в Telegram:** Присылает аккуратную карточку с вердиктом, оценкой, резюме и ссылкой на PR прямо в чат команды или личку.
+- **Опциональный Telegram:** Если заданы `TELEGRAM_BOT_TOKEN` и `TELEGRAM_CHAT_ID` — присылает аккуратную карточку с вердиктом, оценкой, резюме и ссылкой на PR. Без этих токенов уведомления просто пропускаются, а ревью по-прежнему публикуется в GitHub.
 - **Мультипровайдерность:** Поддерживает **Google Gemini** (бесплатный тариф), **DeepSeek**, **Groq**, **OpenAI**, **OpenCode Go** или локальные модели через **Ollama**.
 
 ---
@@ -48,11 +48,12 @@
    GITHUB_REPOSITORY=owner/repo
    PR_NUMBER=1
 
-   TELEGRAM_BOT_TOKEN=123456:ABC-DEF...
-   TELEGRAM_CHAT_ID=123456789
-
    LLM_PROVIDER=gemini
    LLM_API_KEY=AIzaSy...
+
+   # Опционально — включают уведомления в Telegram:
+   TELEGRAM_BOT_TOKEN=123456:ABC-DEF...
+   TELEGRAM_CHAT_ID=123456789
    ```
 
 4. Запустите агент:
@@ -70,10 +71,12 @@
 | Секрет | Описание |
 | :--- | :--- |
 | `LLM_API_KEY` | API-ключ выбранного провайдера (например, Gemini из [Google AI Studio](https://aistudio.google.com/)) |
-| `TELEGRAM_BOT_TOKEN` | Токен бота от [@BotFather](https://t.me/BotFather) |
-| `TELEGRAM_CHAT_ID` | ID чата или группы (можно узнать у [@userinfobot](https://t.me/userinfobot)) |
+| `TELEGRAM_BOT_TOKEN` | **Опционально.** Токен бота от [@BotFather](https://t.me/BotFather) |
+| `TELEGRAM_CHAT_ID` | **Опционально.** ID чата или группы (можно узнать у [@userinfobot](https://t.me/userinfobot)) |
 
 > ℹ️ **Примечание:** `GITHUB_TOKEN` генерируется GitHub автоматически при каждом запуске воркфлоу, добавлять его вручную не нужно.
+
+> 📲 **Telegram опционален:** уведомления отправляются только если заданы ОБА секрета `TELEGRAM_BOT_TOKEN` и `TELEGRAM_CHAT_ID`. Без них шаг «Notify Telegram» пропускается — ревью всё равно публикуется в GitHub PR. Обязательны только `GITHUB_TOKEN` и `LLM_API_KEY` (или `GEMINI_API_KEY`).
 
 ### 2. (Опционально) Переменные конфигурации (Repository Variables)
 В **Settings → Secrets and variables → Actions → Variables**:
@@ -81,6 +84,7 @@
 - `LLM_PROVIDER`: `gemini` (по умолчанию), `deepseek`, `groq`, `openai`, `opencode-go`
 - `LLM_MODEL`: Название модели (например, `gemini-2.5-flash`, `deepseek-chat`, `gpt-4o-mini`, `glm-5.3`)
 - `MAX_DIFF_LINES`: Лимит строк diff (по умолчанию `1500`)
+- `REVIEW_EXTRA_INSTRUCTIONS`: **Опционально.** Дополнительные инструкции для ревью (например, проекты̆ные конвенции), которые дописываются в конец системного промпта. Ревью выполняется с экспертизой по стеку Next.js App Router + TypeScript strict + SCSS Modules + React best practices + безопасность Server Actions.
 
 ### 3. Разрешения для GitHub Actions
 Перейдите в **Settings → Actions → General → Workflow permissions** и убедитесь, что выбрано:
@@ -108,6 +112,8 @@ LLM_MODEL=glm-5.3
 ---
 
 ## 📲 Пример сообщения в Telegram
+
+Отправляется только при заданных `TELEGRAM_BOT_TOKEN` и `TELEGRAM_CHAT_ID`:
 
 ```text
 🤖 AI Code Review | owner/repo

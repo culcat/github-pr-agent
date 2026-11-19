@@ -25,6 +25,7 @@ class PRAgent:
             provider=self.config.llm_provider,
             model=self.config.llm_model or None,
             base_url=self.config.llm_base_url,
+            extra_instructions=self.config.review_extra_instructions or None,
         )
         self.telegram = TelegramClient(
             bot_token=self.config.telegram_bot_token,
@@ -86,18 +87,21 @@ class PRAgent:
             comments=formatted_comments,
         )
 
-        # 6. Notify Telegram
-        logger.info("Sending summary notification to Telegram...")
-        tg_success = self.telegram.send_review_notification(
-            pr=pr,
-            review=review,
-            repo_name=self.config.github_repository,
-        )
+        # 6. Notify Telegram (optional: only when fully configured)
+        if self.config.telegram_bot_token and self.config.telegram_chat_id:
+            logger.info("Sending summary notification to Telegram...")
+            tg_success = self.telegram.send_review_notification(
+                pr=pr,
+                review=review,
+                repo_name=self.config.github_repository,
+            )
 
-        if tg_success:
-            logger.info("Telegram notification delivered successfully.")
+            if tg_success:
+                logger.info("Telegram notification delivered successfully.")
+            else:
+                logger.warning("Telegram notification failed.")
         else:
-            logger.warning("Telegram notification failed.")
+            logger.info("Telegram not configured, skipping notification")
 
         return True
 
