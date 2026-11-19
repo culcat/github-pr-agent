@@ -96,16 +96,19 @@ class Config:
         ]
         + DEFAULT_EXCLUDED_PATTERNS
     )
+    review_extra_instructions: str = field(
+        default_factory=lambda: os.getenv("REVIEW_EXTRA_INSTRUCTIONS", "")
+    )
 
     def validate(self) -> None:
-        """Validate required settings."""
+        """Validate required settings.
+
+        Only GITHUB_TOKEN and an LLM API key are mandatory. Telegram
+        settings are optional: when absent, notifications are skipped.
+        """
         missing = []
         if not self.github_token:
             missing.append("GITHUB_TOKEN")
-        if not self.telegram_bot_token:
-            missing.append("TELEGRAM_BOT_TOKEN")
-        if not self.telegram_chat_id:
-            missing.append("TELEGRAM_CHAT_ID")
         if not self.llm_api_key:
             missing.append("LLM_API_KEY / GEMINI_API_KEY")
 
