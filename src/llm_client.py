@@ -1,4 +1,4 @@
-"""LLM Reviewer supporting Gemini, DeepSeek, Groq, OpenAI, and custom OpenAI-compatible endpoints."""
+"""LLM Reviewer supporting Gemini, DeepSeek, Groq, OpenAI, OpenCode Go, and custom OpenAI-compatible endpoints."""
 
 import json
 import logging
@@ -6,6 +6,7 @@ import os
 import re
 from dataclasses import dataclass, field
 from typing import Any, Dict, List, Optional
+from uuid import uuid4
 import requests
 
 logger = logging.getLogger(__name__)
@@ -27,6 +28,10 @@ PROVIDER_CONFIGS = {
     "openai": {
         "base_url": "https://api.openai.com/v1",
         "default_model": "gpt-4o-mini",
+    },
+    "opencode-go": {
+        "base_url": "https://opencode.ai/inference/go/v1",
+        "default_model": "glm-5.3",
     },
 }
 
@@ -109,6 +114,14 @@ class LLMClient:
             "Content-Type": "application/json",
         })
 
+        # OpenCode Go API requires a stable session identifier and an
+        # explicit User-Agent on every request.
+        if self.provider == "opencode-go":
+            self.session.headers.update({
+                "User-Agent": "culcat-pr-agent/1.0",
+                "x-opencode-session": str(uuid4()),
+            })
+
     def review_code(
         self,
         pr_title: str,
@@ -138,6 +151,7 @@ Please review these changes and return your response in the requested JSON struc
         }
 
         # Enable JSON response format if supported
+        # (note: opencode-go does not accept response_format)
         if self.provider in ("openai", "gemini", "groq"):
             payload["response_format"] = {"type": "json_object"}
 
