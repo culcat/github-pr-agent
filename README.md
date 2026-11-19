@@ -81,6 +81,7 @@
 - `LLM_PROVIDER`: `gemini` (по умолчанию), `deepseek`, `groq`, `openai`
 - `LLM_MODEL`: Название модели (например, `gemini-2.5-flash`, `deepseek-chat`, `gpt-4o-mini`)
 - `MAX_DIFF_LINES`: Лимит строк diff (по умолчанию `1500`)
+- `REVIEW_EXTRA_INSTRUCTIONS`: **Опционально.** Дополнительные инструкции для ревью (например, проекты̆ные конвенции), которые дописываются в конец системного промпта. Ревью выполняется с экспертизой по стеку Next.js App Router + TypeScript strict + SCSS Modules + React best practices + безопасность Server Actions.
 
 ### 3. Разрешения для GitHub Actions
 Перейдите в **Settings → Actions → General → Workflow permissions** и убедитесь, что выбрано:
